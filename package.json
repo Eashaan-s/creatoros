@@ -1,0 +1,17 @@
+{
+  "name": "creatoros",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @creatoros/web --filter @creatoros/shared dev",
+    "dev:web": "pnpm --filter @creatoros/web dev",
+    "dev:api": "cd apps/api && python -m uvicorn app.main:app --reload --port 8000",
+    "build": "pnpm --filter @creatoros/shared build && pnpm --filter @creatoros/web build",
+    "lint": "pnpm --filter @creatoros/web lint",
+    "typecheck": "pnpm --filter @creatoros/shared build && pnpm --filter @creatoros/web typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

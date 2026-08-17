@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: creatoros
+      POSTGRES_PASSWORD: creatoros
+      POSTGRES_DB: creatoros
+    ports:
+      - "5432:5432"
+    volumes:
+      - creatoros_pg:/var/lib/postgresql/data
+
+volumes:
+  creatoros_pg:

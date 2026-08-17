@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #111113;
+  --card-foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  --input: #27272a;
+  --primary: #e4e4e7;
+  --primary-foreground: #09090b;
+  --secondary: #1c1c1f;
+  --secondary-foreground: #fafafa;
+  --accent: #1f6feb;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --ring: #3f3f46;
+  --sidebar: #0c0c0e;
+  --sidebar-foreground: #f4f4f5;
+  --sidebar-border: #1f1f23;
+  --success: #22c55e;
+  --radius: 0.75rem;
+  --glow: rgba(31, 111, 235, 0.18);
+}
+
+.light {
+  --background: #fafafa;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --accent: #1f6feb;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --ring: #d4d4d8;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18181b;
+  --sidebar-border: #e4e4e7;
+  --glow: rgba(31, 111, 235, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-success: var(--success);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-lg: var(--radius);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, var(--glow), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(255, 255, 255, 0.04), transparent 50%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  antialiased: true;
+}
+
+.academic-jade {
+  --background: #0a0f0d;
+  --foreground: #f2f5f3;
+  --card: #101614;
+  --card-foreground: #f2f5f3;
+  --muted: #151c19;
+  --muted-foreground: #9aa8a1;
+  --border: #232b27;
+  --input: #232b27;
+  --primary: #e8eee9;
+  --primary-foreground: #0a0f0d;
+  --secondary: #151c19;
+  --secondary-foreground: #f2f5f3;
+  --accent: #3d5c4a;
+  --accent-foreground: #eef5f0;
+  --ring: #3d5c4a;
+  --glow: rgba(61, 92, 74, 0.08);
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, #3d5c4a 18%, var(--border));
+  background:
+    radial-gradient(900px 420px at 12% -10%, rgba(61, 92, 74, 0.07), transparent 55%),
+    color-mix(in oklab, var(--card) 92%, transparent);
+  padding: 1rem;
+}
+
+.prose-editor {
+  outline: none;
+}
+
+.prose-editor h1 {
+  font-size: 1.875rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin: 1.25rem 0 0.75rem;
+}
+
+.prose-editor h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 1.1rem 0 0.55rem;
+}
+
+.prose-editor h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.9rem 0 0.45rem;
+}
+
+.prose-editor p {
+  margin: 0.55rem 0;
+  line-height: 1.7;
+  color: color-mix(in oklab, var(--foreground) 92%, transparent);
+}
+
+.prose-editor ul,
+.prose-editor ol {
+  margin: 0.55rem 0 0.55rem 1.25rem;
+  line-height: 1.7;
+}
+
+.prose-editor li {
+  margin: 0.2rem 0;
+}
+
+.prose-editor code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--muted);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+}
+
+.prose-editor pre {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  margin: 0.85rem 0;
+}
+
+.prose-editor blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 0.9rem;
+  color: var(--muted-foreground);
+  margin: 0.85rem 0;
+}
