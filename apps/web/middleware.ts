@@ -18,6 +18,8 @@ function buildMiddleware(): NextMiddleware {
     "/help(.*)",
     "/sign-in(.*)",
     "/sign-up(.*)",
+    // Proxied FastAPI — auth is Bearer JWT on the API, not Clerk page session.
+    "/api(.*)",
   ]);
   return clerkMiddleware(async (auth, request) => {
     if (!isPublicRoute(request)) {

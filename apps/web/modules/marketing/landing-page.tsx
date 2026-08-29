@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronDown, FlaskConical, Info, PenLine, Share2, Sparkles } from "lucide-react";
 import { CursorGlow } from "@/components/effects/cursor-glow";
+import { AuthCtaGroup } from "@/components/marketing/auth-cta-group";
 import { Button } from "@/components/ui/button";
 import { HeroDemoReel } from "@/modules/marketing/hero-demo-reel";
 import { cn } from "@/lib/utils";
@@ -79,6 +80,15 @@ const FAQS = [
 export function LandingPage() {
   const [openIntro, setOpenIntro] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const reduceMotion = useReducedMotion();
+  const fade = (delay = 0) =>
+    reduceMotion
+      ? { initial: false as const, animate: { opacity: 1 }, transition: { duration: 0 } }
+      : {
+          initial: { opacity: 0, y: 14 },
+          animate: { opacity: 1, y: 0 },
+          transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
+        };
 
   return (
     <div className="relative overflow-x-hidden">
@@ -99,12 +109,7 @@ export function LandingPage() {
         </div>
 
         <div className="relative mx-auto flex min-h-[100svh] max-w-5xl flex-col items-center justify-center px-5 pb-16 pt-16 text-center md:px-8 md:pb-20 md:pt-20">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-2xl"
-          >
+          <motion.div {...fade(0)} className="w-full max-w-2xl">
             <div className="mb-6 flex items-center justify-center gap-2.5">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] text-white shadow-[0_0_28px_var(--glow)]">
                 <Sparkles className="h-4 w-4" />
@@ -117,25 +122,12 @@ export function LandingPage() {
             <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[var(--muted-foreground)] md:text-base">
               Structured briefs. Streamed drafts. No chatbot clutter.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild variant="accent" size="lg">
-                <Link href="/dashboard">
-                  Open studio
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="#how">See how it works</Link>
-              </Button>
+            <div className="mt-8">
+              <AuthCtaGroup />
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.16, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-12 w-full md:mt-14"
-          >
+          <motion.div {...fade(0.12)} className="mt-12 w-full md:mt-14">
             <HeroDemoReel />
           </motion.div>
         </div>
@@ -151,10 +143,10 @@ export function LandingPage() {
           {STEPS.map((step, i) => (
             <motion.li
               key={step.n}
-              initial={{ opacity: 0, y: 14 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
-              transition={{ delay: 0.06 * i, duration: 0.4 }}
+              transition={{ delay: reduceMotion ? 0 : 0.06 * i, duration: reduceMotion ? 0 : 0.4 }}
             >
               <p className="font-mono text-xs text-[var(--accent)]">{step.n}</p>
               <h3 className="mt-3 text-lg font-semibold tracking-tight">{step.title}</h3>
@@ -311,16 +303,8 @@ export function LandingPage() {
           <p className="mx-auto mt-4 max-w-md text-sm text-[var(--muted-foreground)] md:text-base">
             Start with Writer — Research and Social are one click away.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild variant="accent" size="lg">
-              <Link href="/dashboard">
-                Open studio
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/writer">Writer Studio</Link>
-            </Button>
+          <div className="mt-8">
+            <AuthCtaGroup primaryLabel="Open studio" secondaryHref="/writer" secondaryLabel="Writer Studio" />
           </div>
         </div>
       </section>

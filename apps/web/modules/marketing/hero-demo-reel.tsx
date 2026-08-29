@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { FlaskConical, PenLine, Share2, Sparkles } from "lucide-react";
 
 const SCENES = [
@@ -58,8 +58,10 @@ const SCENES = [
 /** Auto-playing, non-interactive product reel — teases studios; full tools live in the app. */
 export function HeroDemoReel() {
   const [index, setIndex] = useState(0);
+  const reduceMotion = useReducedMotion();
   const scene = SCENES[index];
   const Icon = scene.icon;
+  const anim = reduceMotion ? 0 : 1;
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -70,29 +72,30 @@ export function HeroDemoReel() {
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]/95 shadow-[0_40px_100px_-48px_rgba(0,0,0,0.85)]">
-      <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-[var(--border)] px-3 py-2.5 sm:px-4 sm:py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-[#3f3f46]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#3f3f46]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#3f3f46]" />
-        <span className="ml-2 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
-          <Sparkles className="h-3 w-3 text-[var(--accent)]" />
+        <span className="ml-2 flex min-w-0 items-center gap-1.5 truncate text-xs text-[var(--muted-foreground)]">
+          <Sparkles className="h-3 w-3 shrink-0 text-[var(--accent)]" />
           CreatorOS · studio preview
         </span>
       </div>
 
-      <div className="relative min-h-[300px] md:min-h-[340px]">
-        <AnimatePresence mode="wait">
+      {/* Mobile: natural height (no absolute clip). Desktop: fixed stage for crossfade. */}
+      <div className="relative md:min-h-[340px]">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={scene.id}
-            initial={{ opacity: 0, y: 10 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.4 }}
-            className="absolute inset-0 grid md:grid-cols-[220px_1fr]"
+            exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+            transition={{ duration: 0.28 * anim }}
+            className="grid md:absolute md:inset-0 md:grid-cols-[220px_1fr]"
           >
-            <div className="flex flex-col gap-3 border-b border-[var(--border)] bg-[var(--sidebar)]/50 p-4 md:border-b-0 md:border-r">
+            <div className="flex flex-col gap-2.5 border-b border-[var(--border)] bg-[var(--sidebar)]/50 p-3 sm:gap-3 sm:p-4 md:border-b-0 md:border-r">
               <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 text-[var(--accent)]" />
+                <Icon className="h-4 w-4 shrink-0 text-[var(--accent)]" />
                 <p className="text-sm font-semibold tracking-tight">{scene.label}</p>
               </div>
 
@@ -100,46 +103,46 @@ export function HeroDemoReel() {
                 {scene.fields.map((field, i) => (
                   <motion.div
                     key={field.label}
-                    initial={{ opacity: 0, x: -8 }}
+                    initial={reduceMotion ? false : { opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.12 + i * 0.2 }}
+                    transition={{ delay: (0.08 + i * 0.12) * anim }}
                     className="rounded-lg border border-[var(--border)] bg-[var(--muted)]/45 px-2.5 py-2 text-left"
                   >
                     <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                       {field.label}
                     </p>
-                    <p className="mt-0.5 text-[12px] font-medium">{field.value}</p>
+                    <p className="mt-0.5 text-[12px] font-medium leading-snug">{field.value}</p>
                   </motion.div>
                 ))}
               </div>
 
               <motion.div
-                initial={{ opacity: 0, scaleX: 0.7 }}
+                initial={reduceMotion ? false : { opacity: 0, scaleX: 0.85 }}
                 animate={{ opacity: 1, scaleX: 1 }}
-                transition={{ delay: 0.85, duration: 0.45 }}
-                className="mt-auto origin-left rounded-lg bg-[var(--accent)] px-3 py-2 text-center text-xs font-semibold text-[var(--accent-foreground)]"
+                transition={{ delay: 0.55 * anim, duration: 0.3 * anim }}
+                className="origin-left rounded-lg bg-[var(--accent)] px-3 py-2 text-center text-xs font-semibold text-[var(--accent-foreground)] md:mt-auto"
               >
                 Generate
               </motion.div>
             </div>
 
-            <div className="flex flex-col gap-3 p-4 md:p-5">
+            <div className="flex flex-col gap-2.5 p-3 sm:gap-3 sm:p-4 md:p-5">
               <motion.p
-                initial={{ opacity: 0 }}
+                initial={reduceMotion ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
+                transition={{ delay: 0.2 * anim }}
                 className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--muted-foreground)]"
               >
                 Streaming draft
               </motion.p>
 
-              <div className="flex-1 space-y-2.5 text-left">
+              <div className="space-y-2 text-left sm:space-y-2.5 md:flex-1">
                 {scene.draft.map((line, i) => (
                   <motion.p
                     key={line}
-                    initial={{ opacity: 0, y: 6 }}
+                    initial={reduceMotion ? false : { opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.55 + i * 0.35, duration: 0.4 }}
+                    transition={{ delay: (0.35 + i * 0.2) * anim, duration: 0.28 * anim }}
                     className={
                       i === 0
                         ? "text-sm font-semibold tracking-tight md:text-base"
@@ -151,13 +154,13 @@ export function HeroDemoReel() {
                 ))}
               </div>
 
-              <div className="mt-auto flex gap-2 pt-2">
+              <div className="mt-1 flex flex-wrap gap-2 border-t border-[var(--border)]/60 pt-3 md:mt-auto md:border-t-0 md:pt-2">
                 {["Copy", "Improve", "Save"].map((action, i) => (
                   <motion.span
                     key={action}
-                    initial={{ opacity: 0, y: 4 }}
+                    initial={reduceMotion ? false : { opacity: 0, y: 3 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.6 + i * 0.15 }}
+                    transition={{ delay: (1.0 + i * 0.1) * anim }}
                     className="rounded-md border border-[var(--border)] px-2.5 py-1 text-[10px] text-[var(--muted-foreground)]"
                   >
                     {action}
@@ -169,7 +172,7 @@ export function HeroDemoReel() {
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3">
+      <div className="flex flex-col gap-2 border-t border-[var(--border)] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
         <div className="flex gap-1.5">
           {SCENES.map((s, i) => (
             <span
@@ -180,7 +183,7 @@ export function HeroDemoReel() {
             />
           ))}
         </div>
-        <p className="text-[11px] text-[var(--muted-foreground)]">
+        <p className="text-[11px] leading-snug text-[var(--muted-foreground)] sm:text-right">
           Preview only — open the studio for the full flow
         </p>
       </div>

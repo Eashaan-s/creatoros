@@ -67,6 +67,15 @@ Open [http://localhost:3000](http://localhost:3000) for the marketing landing pa
 
 Without Clerk keys, the app runs with a **local workspace** badge and the API accepts a local bearer token.
 
+### Enable Clerk (accounts)
+
+See **[docs/CLERK.md](docs/CLERK.md)** for the full walkthrough. Short version:
+
+1. Create an app at [dashboard.clerk.com](https://dashboard.clerk.com)
+2. Put `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` in `apps/web/.env.local`
+3. Put `CLERK_JWKS_URL` + `CLERK_ISSUER` in `apps/api/.env`
+4. Restart web + API
+
 ## Environment
 
 ### `apps/api/.env`
@@ -87,7 +96,7 @@ Without Clerk keys, the app runs with a **local workspace** badge and the API ac
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` |
+| `NEXT_PUBLIC_API_URL` | `/api/v1` (Next rewrite → FastAPI; use this for phone/LAN too) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional — enables Clerk UI + middleware |
 | `CLERK_SECRET_KEY` | Optional — required when Clerk is enabled |
 | `NEXT_PUBLIC_DEV_AUTH_TOKEN` | Optional override (`dev:dev_user:dev@creatoros.local`) |

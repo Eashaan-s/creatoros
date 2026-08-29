@@ -1,0 +1,32 @@
+# CreatorOS — local run (Windows PowerShell)
+# Restart BOTH after env or next.config changes.
+
+# --- Terminal 1: API ---
+cd c:\Users\shank\OneDrive\Desktop\createos\apps\api
+.\.venv\Scripts\activate
+uvicorn app.main:app --reload --port 8000 --host 127.0.0.1
+
+# Health: http://127.0.0.1:8000/health
+
+# --- Terminal 2: Web ---
+cd c:\Users\shank\OneDrive\Desktop\createos\apps\web
+npx next dev --turbopack --port 3000
+
+# App:     http://localhost:3000
+# API via: http://localhost:3000/api/v1/...  (Next rewrite → FastAPI)
+
+# --- If port 3000 is busy ---
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+cd c:\Users\shank\OneDrive\Desktop\createos\apps\web
+npx next dev --turbopack --port 3000
+
+# --- Phone / LAN (optional) ---
+# 1. Find PC IP:  ipconfig   → e.g. 192.168.1.12
+# 2. In Clerk Dashboard → Configure → Domains / Allowed origins:
+#      add  http://192.168.1.12:3000
+# 3. Restart web with LAN bind:
+cd c:\Users\shank\OneDrive\Desktop\createos\apps\web
+npx next dev --turbopack --port 3000 --hostname 0.0.0.0
+# 4. Phone (same Wi‑Fi):  http://192.168.1.12:3000
+#    Keep NEXT_PUBLIC_API_URL=/api/v1  (do NOT use localhost:8000 on phone)

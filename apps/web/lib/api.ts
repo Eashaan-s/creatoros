@@ -17,7 +17,26 @@ import type {
   WriterImproveRequest,
 } from "@creatoros/shared";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+/** Prefer same-origin `/api/v1` (Next rewrite → FastAPI) so phones/LAN work. */
+function resolveApiBase(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
+  if (typeof window === "undefined") return configured;
+
+  // Relative paths stay same-origin (works on phone via LAN IP).
+  if (configured.startsWith("/")) return configured;
+
+  try {
+    const url = new URL(configured);
+    const pageHost = window.location.hostname;
+    const isLocalApi = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const isLanPage = pageHost !== "localhost" && pageHost !== "127.0.0.1";
+    // Never call PC "localhost" from a phone — use same-origin proxy instead.
+    if (isLocalApi && isLanPage) return "/api/v1";
+  } catch {
+    // ignore
+  }
+  return configured;
+}
 
 export type TokenGetter = () => Promise<string | null>;
 
@@ -27,28 +46,54 @@ export function setApiTokenGetter(getter: TokenGetter) {
   tokenGetter = getter;
 }
 
+async function resolveAuthToken(): Promise<string | null> {
+  if (!tokenGetter) return null;
+  let token = await tokenGetter();
+  if (token) return token;
+  // Clerk on mobile/LAN can hydrate a beat late after navigation.
+  await new Promise((r) => setTimeout(r, 400));
+  token = await tokenGetter();
+  return token;
+}
+
 async function authHeaders(json = true): Promise<HeadersInit> {
   const headers: Record<string, string> = {};
   if (json) headers["Content-Type"] = "application/json";
-  const token = tokenGetter ? await tokenGetter() : null;
+  const token = await resolveAuthToken();
+  const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
   if (token) {
     headers.Authorization = `Bearer ${token}`;
-  } else if (process.env.NEXT_PUBLIC_DEV_AUTH_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.NEXT_PUBLIC_DEV_AUTH_TOKEN}`;
+  } else if (!clerkEnabled) {
+    // Local workspace only — never invent a user when Clerk is on.
+    if (process.env.NEXT_PUBLIC_DEV_AUTH_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.NEXT_PUBLIC_DEV_AUTH_TOKEN}`;
+    } else {
+      headers.Authorization = "Bearer dev:dev_user:dev@creatoros.local";
+    }
   } else {
-    headers.Authorization = "Bearer dev:dev_user:dev@creatoros.local";
+    throw new Error("Not signed in — open Sign in, then try again.");
   }
   return headers;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      ...(await authHeaders(!(init?.body instanceof FormData))),
-      ...(init?.headers ?? {}),
-    },
-  });
+  const apiBase = resolveApiBase();
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}${path}`, {
+      ...init,
+      headers: {
+        ...(await authHeaders(!(init?.body instanceof FormData))),
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("Not signed in")) throw err;
+    throw new Error(
+      "Failed to reach the API. Keep the API server running, use http://<PC-IP>:3000 on phone, and set NEXT_PUBLIC_API_URL=/api/v1.",
+    );
+  }
   if (!res.ok) {
     const detail = await res.text();
     throw new Error(formatApiError(detail, res.status));
@@ -162,12 +207,21 @@ async function streamSSE(
   handlers: SSEHandlers,
   signal?: AbortSignal,
 ) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: await authHeaders(true),
-    body: JSON.stringify(body),
-    signal,
-  });
+  const apiBase = resolveApiBase();
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}${path}`, {
+      method: "POST",
+      headers: await authHeaders(true),
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("Not signed in")) throw err;
+    throw new Error(
+      "Failed to reach the API. Keep the API server running, use http://<PC-IP>:3000 on phone, and set NEXT_PUBLIC_API_URL=/api/v1.",
+    );
+  }
 
   if (!res.ok || !res.body) {
     const detail = await res.text();

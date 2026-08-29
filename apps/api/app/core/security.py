@@ -74,6 +74,9 @@ async def get_auth_user(
     settings: Settings = Depends(get_settings),
 ) -> AuthUser:
     if credentials is None or not credentials.credentials:
+        # When Clerk JWKS is configured, never silently become the local dev user.
+        if settings.clerk_jwks_url:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
         if settings.auth_dev_bypass and settings.environment != "production":
             return _dev_user_from_token("dev:dev_user:dev@creatoros.local")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
