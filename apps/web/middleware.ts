@@ -11,7 +11,14 @@ function buildMiddleware(): NextMiddleware {
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { clerkMiddleware, createRouteMatcher } = require("@clerk/nextjs/server") as typeof import("@clerk/nextjs/server");
-  const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+  const isPublicRoute = createRouteMatcher([
+    "/",
+    "/privacy(.*)",
+    "/terms(.*)",
+    "/help(.*)",
+    "/sign-in(.*)",
+    "/sign-up(.*)",
+  ]);
   return clerkMiddleware(async (auth, request) => {
     if (!isPublicRoute(request)) {
       await auth.protect();

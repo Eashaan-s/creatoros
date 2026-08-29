@@ -131,6 +131,22 @@ export const WRITER_CONTENT_TYPES: { value: WriterContentType; label: string }[]
   { value: "whitepaper", label: "Whitepaper" },
 ];
 
+/** Content types where a call-to-action field is relevant. */
+export const WRITER_TYPES_WITH_CTA: WriterContentType[] = [
+  "blog",
+  "newsletter",
+  "email",
+  "cold_email",
+  "sales_copy",
+  "landing_page",
+  "product_description",
+  "press_release",
+];
+
+export function writerTypeSupportsCta(type: WriterContentType): boolean {
+  return WRITER_TYPES_WITH_CTA.includes(type);
+}
+
 export const CONTENT_TONES: { value: ContentTone; label: string }[] = [
   { value: "professional", label: "Professional" },
   { value: "casual", label: "Casual" },

@@ -12,7 +12,7 @@ export default function SignUpPage() {
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
             Set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY, or use Dev mode without auth.
           </p>
-          <Link href="/" className="mt-4 inline-block text-sm text-[var(--accent)] underline">
+          <Link href="/dashboard" className="mt-4 inline-block text-sm text-[var(--accent)] underline">
             Continue to app
           </Link>
         </div>
@@ -22,7 +22,7 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4">
-      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
+      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" forceRedirectUrl="/dashboard" />
     </div>
   );
 }

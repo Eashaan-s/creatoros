@@ -6,6 +6,7 @@ import {
   CONTENT_LENGTHS,
   CONTENT_TONES,
   WRITER_CONTENT_TYPES,
+  writerTypeSupportsCta,
   type ContentLength,
   type ContentTone,
   type WriterContentType,
@@ -16,6 +17,7 @@ import {
   Copy,
   Download,
   Loader2,
+  PenLine,
   RefreshCw,
   Save,
   Sparkles,
@@ -23,12 +25,16 @@ import {
 } from "lucide-react";
 import { RichEditor } from "@/components/editor/rich-editor";
 import { PageHeader } from "@/components/shared/page-header";
+import { StudioActionBar } from "@/components/studio/studio-action-bar";
+import { StudioCanvasEmpty } from "@/components/studio/studio-canvas-empty";
+import { StreamingProgress } from "@/components/studio/streaming-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api, streamWriter } from "@/lib/api";
+import { notifySaveToEditInEditor } from "@/lib/studio-notices";
 import { downloadTextFile, htmlToMarkdown, markdownToHtml } from "@/lib/utils";
 
 const VALID_TYPES = new Set(WRITER_CONTENT_TYPES.map((t) => t.value));
@@ -93,6 +99,7 @@ export function WriterStudio() {
   }, [docParam, typeParam, router]);
 
   const canGenerate = topic.trim().length > 0 && !streaming;
+  const showCta = writerTypeSupportsCta(type);
 
   const payload: WriterGenerateRequest = useMemo(
     () => ({
@@ -105,10 +112,10 @@ export function WriterStudio() {
         .split(",")
         .map((k) => k.trim())
         .filter(Boolean),
-      cta: cta.trim(),
+      cta: showCta ? cta.trim() : "",
       document_id: documentId,
     }),
-    [type, topic, audience, tone, length, keywords, cta, documentId],
+    [type, topic, audience, tone, length, keywords, cta, documentId, showCta],
   );
 
   async function runGenerate() {
@@ -134,7 +141,7 @@ export function WriterStudio() {
             setMarkdown(acc);
             setHtml(markdownToHtml(acc));
           },
-          onDone: () => toast.success("Draft ready"),
+          onDone: () => notifySaveToEditInEditor("Draft ready"),
           onError: (message) => toast.error(message),
         },
         controller.signal,
@@ -195,7 +202,10 @@ export function WriterStudio() {
         const created = await api.createDocument(body);
         setDocumentId(created.id);
       }
-      toast.success("Saved to History");
+      toast.success("Saved to History", {
+        description: "Open it from Editor or History to make edits.",
+        duration: 4000,
+      });
     } catch (err) {
       toast.error((err as Error).message || "Save failed");
     } finally {
@@ -220,7 +230,8 @@ export function WriterStudio() {
       <PageHeader
         title="Writer Studio"
         description="Brief in. Polished draft out — streamed into a rich editor you can refine and save."
-        backHref="/"
+        backHref="/dashboard"
+        backLabel="Dashboard"
       />
 
       <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -308,14 +319,16 @@ export function WriterStudio() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>CTA</Label>
-            <Input
-              value={cta}
-              onChange={(e) => setCta(e.target.value)}
-              placeholder="Book a demo / Subscribe / Learn more"
-            />
-          </div>
+          {showCta ? (
+            <div className="space-y-2">
+              <Label>CTA</Label>
+              <Input
+                value={cta}
+                onChange={(e) => setCta(e.target.value)}
+                placeholder="Book a demo / Subscribe / Learn more"
+              />
+            </div>
+          ) : null}
 
           <Button type="submit" className="w-full" variant="accent" disabled={!canGenerate}>
             {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -324,7 +337,17 @@ export function WriterStudio() {
         </form>
 
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
+          <StudioActionBar
+            status={
+              streaming
+                ? "Streaming into the editor…"
+                : markdown
+                  ? documentId
+                    ? "Draft saved — keep refining or export."
+                    : "Unsaved draft — Save, then edit in Editor."
+                  : "Fill the brief, then Generate."
+            }
+          >
             <Button variant="outline" size="sm" onClick={copyContent} disabled={!markdown}>
               <Copy className="h-4 w-4" /> Copy
             </Button>
@@ -341,17 +364,16 @@ export function WriterStudio() {
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save
             </Button>
-          </div>
+          </StudioActionBar>
+
+          <StreamingProgress active={streaming} />
 
           {!markdown && !streaming ? (
-            <div className="flex min-h-[480px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)]/40 px-6 text-center">
-              <div>
-                <p className="text-sm font-medium">Your draft canvas is empty</p>
-                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  Fill the brief and generate to stream content into TipTap.
-                </p>
-              </div>
-            </div>
+            <StudioCanvasEmpty
+              icon={PenLine}
+              title="Your draft canvas is empty"
+              description="Fill the brief on the left and generate to stream content into TipTap."
+            />
           ) : (
             <RichEditor
               content={html}
@@ -359,7 +381,7 @@ export function WriterStudio() {
                 setHtml(next);
                 setMarkdown(htmlToMarkdown(next));
               }}
-              editable={!streaming}
+              editable={false}
             />
           )}
         </div>

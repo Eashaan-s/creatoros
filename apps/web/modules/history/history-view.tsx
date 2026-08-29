@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
+import { moduleHref } from "@/lib/nav";
 import { History as HistoryIcon } from "lucide-react";
 
 export function HistoryView() {
@@ -97,16 +98,7 @@ export function HistoryView() {
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
                       <Button asChild size="icon" variant="ghost">
-                        <Link
-                          href={
-                            doc.module === "social"
-                              ? `/social?doc=${doc.id}`
-                              : doc.module === "research"
-                                ? `/research?doc=${doc.id}`
-                                : `/writer?doc=${doc.id}`
-                          }
-                          title="Open document"
-                        >
+                        <Link href={moduleHref(doc.module, doc.id)} title="Open document">
                           <ExternalLink className="h-4 w-4" />
                         </Link>
                       </Button>

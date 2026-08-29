@@ -2,7 +2,7 @@
 
 AI operating system for creators — generate, edit, research, and publish from one workspace.
 
-Phase 1 ships the product shell plus a fully wired **Writer Studio** (brief → SSE stream → TipTap → save/export).
+Phase 1 ships the product shell, a **Studio Signal** marketing landing page, and wired **Writer**, **Research** (incl. Academic Mode), and **Social** studios.
 
 ## Stack
 
@@ -63,9 +63,9 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @creatoros/web dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) for the marketing landing page, or [http://localhost:3000/dashboard](http://localhost:3000/dashboard) for the app.
 
-Without Clerk keys, the app runs in **Dev mode** and the API accepts a local bearer token.
+Without Clerk keys, the app runs with a **local workspace** badge and the API accepts a local bearer token.
 
 ## Environment
 

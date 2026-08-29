@@ -1,14 +1,20 @@
 "use client";
 
-import { FileText } from "lucide-react";
-import { ComingSoonModule } from "@/modules/shared/coming-soon";
+import { Suspense } from "react";
+import { EditorStudio } from "@/modules/editor/editor-studio";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EditorPage() {
   return (
-    <ComingSoonModule
-      title="Editor"
-      description="Grammar, rewrite, shorten, expand, translate, and tone transforms on any selection."
-      icon={FileText}
-    />
+    <Suspense
+      fallback={
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-[480px] w-full" />
+        </div>
+      }
+    >
+      <EditorStudio />
+    </Suspense>
   );
 }

@@ -1,14 +1,7 @@
 "use client";
 
-import { BookOpen } from "lucide-react";
-import { ComingSoonModule } from "@/modules/shared/coming-soon";
+import { TemplatesGallery } from "@/modules/templates/templates-gallery";
 
 export default function TemplatesPage() {
-  return (
-    <ComingSoonModule
-      title="Templates"
-      description="Resume, PRD, proposals, newsletters, case studies, and more — launch straight into Writer."
-      icon={BookOpen}
-    />
-  );
+  return <TemplatesGallery />;
 }

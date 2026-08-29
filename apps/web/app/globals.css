@@ -13,7 +13,7 @@
   --primary-foreground: #09090b;
   --secondary: #1c1c1f;
   --secondary-foreground: #fafafa;
-  --accent: #1f6feb;
+  --accent: #2b7fff;
   --accent-foreground: #fafafa;
   --destructive: #ef4444;
   --ring: #3f3f46;
@@ -22,30 +22,31 @@
   --sidebar-border: #1f1f23;
   --success: #22c55e;
   --radius: 0.75rem;
-  --glow: rgba(31, 111, 235, 0.18);
+  --glow: rgba(43, 127, 255, 0.2);
 }
 
 .light {
-  --background: #fafafa;
-  --foreground: #09090b;
+  --background: #eef4fb;
+  --foreground: #0b1220;
   --card: #ffffff;
-  --card-foreground: #09090b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --accent: #1f6feb;
+  --card-foreground: #0b1220;
+  --muted: #dce8f6;
+  --muted-foreground: #3b4f6a;
+  --border: #c5d7ec;
+  --input: #c5d7ec;
+  --primary: #0b1220;
+  --primary-foreground: #f8fbff;
+  --secondary: #d4e4f7;
+  --secondary-foreground: #0b1220;
+  --accent: #1764e8;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
-  --ring: #d4d4d8;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #18181b;
-  --sidebar-border: #e4e4e7;
-  --glow: rgba(31, 111, 235, 0.08);
+  --ring: #7db0ff;
+  --sidebar: #e4eef9;
+  --sidebar-foreground: #0b1220;
+  --sidebar-border: #c5d7ec;
+  --success: #15803d;
+  --glow: rgba(23, 100, 232, 0.16);
 }
 
 @theme inline {
@@ -86,7 +87,7 @@ body {
 body {
   background:
     radial-gradient(1200px 600px at 10% -10%, var(--glow), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(255, 255, 255, 0.04), transparent 50%),
+    radial-gradient(900px 500px at 100% 0%, color-mix(in oklab, var(--accent) 6%, transparent), transparent 50%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -94,27 +95,18 @@ body {
 }
 
 .academic-jade {
-  --background: #0a0f0d;
-  --foreground: #f2f5f3;
-  --card: #101614;
-  --card-foreground: #f2f5f3;
-  --muted: #151c19;
-  --muted-foreground: #9aa8a1;
-  --border: #232b27;
-  --input: #232b27;
-  --primary: #e8eee9;
-  --primary-foreground: #0a0f0d;
-  --secondary: #151c19;
-  --secondary-foreground: #f2f5f3;
+  /* Keep Signal OS chrome; only a soft green corner tinge */
   --accent: #3d5c4a;
   --accent-foreground: #eef5f0;
   --ring: #3d5c4a;
-  --glow: rgba(61, 92, 74, 0.08);
+  --glow: rgba(61, 92, 74, 0.12);
+  position: relative;
   border-radius: 1.25rem;
-  border: 1px solid color-mix(in oklab, #3d5c4a 18%, var(--border));
+  border: 1px solid color-mix(in oklab, #3d5c4a 14%, var(--border));
   background:
-    radial-gradient(900px 420px at 12% -10%, rgba(61, 92, 74, 0.07), transparent 55%),
-    color-mix(in oklab, var(--card) 92%, transparent);
+    radial-gradient(520px 280px at 100% 0%, rgba(61, 92, 74, 0.14), transparent 58%),
+    radial-gradient(420px 220px at 0% 100%, rgba(61, 92, 74, 0.05), transparent 55%),
+    transparent;
   padding: 1rem;
 }
 

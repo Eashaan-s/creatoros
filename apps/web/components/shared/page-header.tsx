@@ -9,24 +9,31 @@ export function PageHeader({
   title,
   description,
   actions,
-  backHref = "/",
+  backHref = "/dashboard",
+  backLabel = "Dashboard",
   showBack = true,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
-  /** Always routes to Dashboard by default — never browser history. */
+  /** In-app back target — never browser history. */
   backHref?: string;
+  backLabel?: string;
   showBack?: boolean;
 }) {
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         {showBack ? (
-          <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 h-8 px-2 text-[var(--muted-foreground)]">
-            <Link href={backHref}>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="-ml-2 mb-2 h-8 gap-1.5 px-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          >
+            <Link href={backHref} aria-label={`Back to ${backLabel}`}>
               <ArrowLeft className="h-4 w-4" />
-              Dashboard
+              {backLabel}
             </Link>
           </Button>
         ) : null}

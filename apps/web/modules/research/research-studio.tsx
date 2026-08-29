@@ -14,6 +14,7 @@ import {
   Copy,
   Download,
   FileUp,
+  FlaskConical,
   GraduationCap,
   Loader2,
   RefreshCw,
@@ -25,11 +26,15 @@ import {
 } from "lucide-react";
 import { RichEditor } from "@/components/editor/rich-editor";
 import { PageHeader } from "@/components/shared/page-header";
+import { StudioActionBar } from "@/components/studio/studio-action-bar";
+import { StudioCanvasEmpty } from "@/components/studio/studio-canvas-empty";
+import { StreamingProgress } from "@/components/studio/streaming-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api, streamAcademic, streamResearch } from "@/lib/api";
+import { notifySaveToEditInEditor } from "@/lib/studio-notices";
 import { cn, downloadTextFile, htmlToMarkdown, markdownToHtml } from "@/lib/utils";
 
 type SourceItem = ResearchSourcePayload & { id: string };
@@ -71,6 +76,40 @@ export function ResearchStudio() {
   const abortRef = useRef<AbortController | null>(null);
   const bootstrapped = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  function resetStudioWorkspace() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setStreaming(false);
+    setExtracting(false);
+    setSearching(false);
+    setSources([]);
+    setOutputs(["summary", "key_insights", "faqs"]);
+    setFocus("");
+    setUrlInput("");
+    setYoutubeInput("");
+    setPasteTitle("Pasted notes");
+    setPasteContent("");
+    setTopic("");
+    setResearchQuestion("");
+    setField("");
+    setPaperQuery("");
+    setPaperHits([]);
+    setSelectedPapers([]);
+    setHtml("");
+    setMarkdown("");
+    setDocumentId(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function switchMode(next: StudioMode) {
+    if (next === mode) return;
+    resetStudioWorkspace();
+    setMode(next);
+    toast.message(next === "academic" ? "Academic Mode" : "Standard Mode", {
+      description: "Fresh workspace — previous inputs and canvas were cleared.",
+    });
+  }
 
   useEffect(() => {
     if (bootstrapped.current) return;
@@ -299,7 +338,7 @@ export function ResearchStudio() {
               setMarkdown(acc);
               setHtml(markdownToHtml(acc));
             },
-            onDone: () => toast.success("IEEE learning draft ready"),
+            onDone: () => notifySaveToEditInEditor("IEEE learning draft ready"),
             onError: (message) => toast.error(message),
           },
           controller.signal,
@@ -313,7 +352,7 @@ export function ResearchStudio() {
               setMarkdown(acc);
               setHtml(markdownToHtml(acc));
             },
-            onDone: () => toast.success("Research pack ready"),
+            onDone: () => notifySaveToEditInEditor("Research pack ready"),
             onError: (message) => toast.error(message),
           },
           controller.signal,
@@ -402,7 +441,10 @@ export function ResearchStudio() {
         const created = await api.createDocument(body);
         setDocumentId(created.id);
       }
-      toast.success("Saved to History");
+      toast.success("Saved to History", {
+        description: "Open it from Editor or History to make edits.",
+        duration: 4000,
+      });
     } catch (err) {
       toast.error((err as Error).message || "Save failed");
     } finally {
@@ -436,32 +478,33 @@ export function ResearchStudio() {
             ? "Academic Mode — search papers, ground your draft, and produce an IEEE-style learning paper."
             : "Upload sources or paste material — generate summaries, insights, FAQs, flashcards, and more."
         }
-        backHref="/"
+        backHref="/dashboard"
+        backLabel="Dashboard"
         actions={
-          <div className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--muted)]/50 p-1">
+          <div className="inline-flex items-center gap-1 rounded-2xl border border-[var(--border)] bg-[var(--muted)]/60 p-1.5 shadow-sm">
             <button
               type="button"
-              onClick={() => setMode("standard")}
+              onClick={() => switchMode("standard")}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium transition",
+                "rounded-xl px-4 py-2.5 text-sm font-semibold tracking-tight transition",
                 mode === "standard"
-                  ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm"
-                  : "text-[var(--muted-foreground)]",
+                  ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm"
+                  : "text-[var(--muted-foreground)] hover:bg-[var(--card)] hover:text-[var(--foreground)]",
               )}
             >
               Standard
             </button>
             <button
               type="button"
-              onClick={() => setMode("academic")}
+              onClick={() => switchMode("academic")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold tracking-tight transition",
                 mode === "academic"
-                  ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm"
-                  : "text-[var(--muted-foreground)]",
+                  ? "bg-[color-mix(in_oklab,#3d5c4a_88%,black)] text-[#eef5f0] shadow-sm ring-1 ring-[color-mix(in_oklab,#3d5c4a_50%,transparent)]"
+                  : "text-[var(--muted-foreground)] hover:bg-[var(--card)] hover:text-[var(--foreground)]",
               )}
             >
-              <GraduationCap className="h-3.5 w-3.5" />
+              <GraduationCap className="h-4 w-4" />
               Academic
             </button>
           </div>
@@ -724,7 +767,21 @@ export function ResearchStudio() {
         </div>
 
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
+          <StudioActionBar
+            status={
+              streaming
+                ? mode === "academic"
+                  ? "Streaming IEEE learning draft…"
+                  : "Streaming research pack…"
+                : markdown
+                  ? documentId
+                    ? "Draft saved — keep refining or export."
+                    : "Unsaved draft — Save, then edit in Editor."
+                  : mode === "academic"
+                    ? "Search papers, add sources, then generate."
+                    : "Add sources, pick outputs, then generate."
+            }
+          >
             <Button variant="outline" size="sm" onClick={copyContent} disabled={!markdown}>
               <Copy className="h-4 w-4" /> Copy
             </Button>
@@ -746,21 +803,23 @@ export function ResearchStudio() {
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save
             </Button>
-          </div>
+          </StudioActionBar>
+
+          <StreamingProgress
+            active={streaming}
+            label={mode === "academic" ? "Streaming IEEE draft…" : "Streaming research pack…"}
+          />
 
           {!markdown && !streaming ? (
-            <div className="flex min-h-[480px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)]/40 px-6 text-center">
-              <div>
-                <p className="text-sm font-medium">
-                  {mode === "academic" ? "IEEE canvas is empty" : "Research canvas is empty"}
-                </p>
-                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  {mode === "academic"
-                    ? "Search papers, add sources, then generate a structured learning draft."
-                    : "Add sources, pick outputs, then generate a grounded research pack."}
-                </p>
-              </div>
-            </div>
+            <StudioCanvasEmpty
+              icon={mode === "academic" ? GraduationCap : FlaskConical}
+              title={mode === "academic" ? "IEEE canvas is empty" : "Research canvas is empty"}
+              description={
+                mode === "academic"
+                  ? "Search papers, add sources, then generate a structured learning draft."
+                  : "Add sources, pick outputs, then generate a grounded research pack."
+              }
+            />
           ) : (
             <RichEditor
               content={html}
@@ -768,7 +827,7 @@ export function ResearchStudio() {
                 setHtml(next);
                 setMarkdown(htmlToMarkdown(next));
               }}
-              editable={!streaming}
+              editable={false}
             />
           )}
         </div>

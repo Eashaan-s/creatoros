@@ -16,17 +16,22 @@ import {
   Loader2,
   RefreshCw,
   Save,
+  Share2,
   Sparkles,
   Wand2,
 } from "lucide-react";
 import { RichEditor } from "@/components/editor/rich-editor";
 import { PageHeader } from "@/components/shared/page-header";
+import { StudioActionBar } from "@/components/studio/studio-action-bar";
+import { StudioCanvasEmpty } from "@/components/studio/studio-canvas-empty";
+import { StreamingProgress } from "@/components/studio/streaming-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api, streamSocial } from "@/lib/api";
+import { notifySaveToEditInEditor } from "@/lib/studio-notices";
 import { cn, downloadTextFile, htmlToMarkdown, markdownToHtml } from "@/lib/utils";
 
 const VALID_PLATFORMS = new Set(SOCIAL_PLATFORMS.map((p) => p.value));
@@ -134,7 +139,7 @@ export function SocialStudio() {
             setMarkdown(acc);
             setHtml(markdownToHtml(acc));
           },
-          onDone: () => toast.success("Social drafts ready"),
+          onDone: () => notifySaveToEditInEditor("Social drafts ready"),
           onError: (message) => toast.error(message),
         },
         controller.signal,
@@ -192,7 +197,10 @@ export function SocialStudio() {
         const created = await api.createDocument(body);
         setDocumentId(created.id);
       }
-      toast.success("Saved to History");
+      toast.success("Saved to History", {
+        description: "Open it from Editor or History to make edits.",
+        duration: 4000,
+      });
     } catch (err) {
       toast.error((err as Error).message || "Save failed");
     } finally {
@@ -217,7 +225,8 @@ export function SocialStudio() {
       <PageHeader
         title="Social Studio"
         description="One idea → platform-native drafts for LinkedIn, X, Instagram, and more."
-        backHref="/"
+        backHref="/dashboard"
+        backLabel="Dashboard"
       />
 
       <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -294,7 +303,17 @@ export function SocialStudio() {
         </form>
 
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
+          <StudioActionBar
+            status={
+              streaming
+                ? "Streaming platform drafts…"
+                : markdown
+                  ? documentId
+                    ? "Draft saved — keep refining or export."
+                    : "Unsaved draft — Save, then edit in Editor."
+                  : "Pick platforms, add an idea, then Generate."
+            }
+          >
             <Button variant="outline" size="sm" onClick={copyContent} disabled={!markdown}>
               <Copy className="h-4 w-4" /> Copy
             </Button>
@@ -311,17 +330,16 @@ export function SocialStudio() {
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save
             </Button>
-          </div>
+          </StudioActionBar>
+
+          <StreamingProgress active={streaming} label="Streaming social drafts…" />
 
           {!markdown && !streaming ? (
-            <div className="flex min-h-[480px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)]/40 px-6 text-center">
-              <div>
-                <p className="text-sm font-medium">No social drafts yet</p>
-                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  Pick platforms, enter one idea, and generate platform-native copy.
-                </p>
-              </div>
-            </div>
+            <StudioCanvasEmpty
+              icon={Share2}
+              title="No social drafts yet"
+              description="Pick platforms, enter one idea, and generate platform-native copy."
+            />
           ) : (
             <RichEditor
               content={html}
@@ -329,7 +347,7 @@ export function SocialStudio() {
                 setHtml(next);
                 setMarkdown(htmlToMarkdown(next));
               }}
-              editable={!streaming}
+              editable={false}
             />
           )}
         </div>

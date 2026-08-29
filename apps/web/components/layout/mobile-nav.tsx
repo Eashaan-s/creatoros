@@ -1,31 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import {
-  BookOpen,
-  FileText,
-  FlaskConical,
-  History,
-  LayoutDashboard,
-  PenLine,
-  Settings,
-  Share2,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { APP_NAV, isNavActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
-
-const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/writer", label: "Writer Studio", icon: PenLine },
-  { href: "/research", label: "Research Studio", icon: FlaskConical },
-  { href: "/social", label: "Social Studio", icon: Share2 },
-  { href: "/editor", label: "Editor", icon: FileText },
-  { href: "/templates", label: "Templates", icon: BookOpen },
-  { href: "/history", label: "History", icon: History },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
 
 export function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
@@ -42,9 +22,9 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
           </Button>
         </div>
         <nav className="flex flex-col gap-1">
-          {NAV.map((item) => {
+          {APP_NAV.map((item) => {
             const Icon = item.icon;
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const active = isNavActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -61,6 +41,13 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
             );
           })}
         </nav>
+        <Link
+          href="/"
+          onClick={onClose}
+          className="mt-auto px-3 py-2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+        >
+          Marketing site
+        </Link>
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ClerkProvider appearance={{ variables: { colorPrimary: "#1f6feb" } }}>
+    <ClerkProvider appearance={{ variables: { colorPrimary: "#1764e8" } }}>
       {inner}
     </ClerkProvider>
   );
