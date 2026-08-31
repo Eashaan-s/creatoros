@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 bearer_scheme = HTTPBearer(auto_error=False)
 
 _jwks_client: PyJWKClient | None = None
+_jwks_client_url: str | None = None
 
 
 @dataclass
@@ -28,28 +29,55 @@ class AuthUser:
     claims: dict[str, Any] | None = None
 
 
+def _normalize_clerk_issuer(raw: str) -> str:
+    value = (raw or "").strip().rstrip("/")
+    # Common misconfig: pasting the JWKS URL into CLERK_ISSUER
+    marker = "/.well-known/jwks.json"
+    if marker in value:
+        value = value.split(marker, 1)[0].rstrip("/")
+    return value
+
+
+def _normalize_clerk_jwks_url(raw: str, issuer: str = "") -> str:
+    value = (raw or "").strip()
+    if not value and issuer:
+        return f"{_normalize_clerk_issuer(issuer)}/.well-known/jwks.json"
+    if value and "/.well-known/" not in value:
+        host = _normalize_clerk_issuer(value)
+        if host.startswith("http"):
+            return f"{host}/.well-known/jwks.json"
+    return value
+
+
 def _get_jwks_client(settings: Settings) -> PyJWKClient:
-    global _jwks_client
-    if _jwks_client is None:
-        if not settings.clerk_jwks_url:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="CLERK_JWKS_URL is not configured",
-            )
-        _jwks_client = PyJWKClient(settings.clerk_jwks_url)
+    global _jwks_client, _jwks_client_url
+    jwks_url = _normalize_clerk_jwks_url(settings.clerk_jwks_url, settings.clerk_issuer)
+    if not jwks_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="CLERK_JWKS_URL is not configured",
+        )
+    if _jwks_client is None or _jwks_client_url != jwks_url:
+        _jwks_client = PyJWKClient(jwks_url, cache_keys=True)
+        _jwks_client_url = jwks_url
     return _jwks_client
 
 
 def _decode_clerk_token(token: str, settings: Settings) -> dict[str, Any]:
     client = _get_jwks_client(settings)
     signing_key = client.get_signing_key_from_jwt(token)
-    options = {"verify_aud": bool(settings.clerk_audience)}
+    issuer = _normalize_clerk_issuer(settings.clerk_issuer)
+    options = {
+        "verify_aud": bool(settings.clerk_audience),
+        "verify_iss": bool(issuer),
+    }
     decode_kwargs: dict[str, Any] = {
         "algorithms": ["RS256"],
         "options": options,
+        "leeway": 30,
     }
-    if settings.clerk_issuer:
-        decode_kwargs["issuer"] = settings.clerk_issuer
+    if issuer:
+        decode_kwargs["issuer"] = issuer
     if settings.clerk_audience:
         decode_kwargs["audience"] = settings.clerk_audience
     return jwt.decode(token, signing_key.key, **decode_kwargs)
@@ -104,7 +132,7 @@ async def get_auth_user(
             logger.warning("Clerk JWT verification failed: %s", exc)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication token",
+                detail=f"Invalid authentication token ({exc})",
             ) from exc
 
     if settings.auth_dev_bypass and settings.environment != "production":
