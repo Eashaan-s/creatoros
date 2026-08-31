@@ -67,19 +67,20 @@ def _decode_clerk_token(token: str, settings: Settings) -> dict[str, Any]:
     client = _get_jwks_client(settings)
     signing_key = client.get_signing_key_from_jwt(token)
     issuer = _normalize_clerk_issuer(settings.clerk_issuer)
+    audience = (settings.clerk_audience or "").strip()
     options = {
-        "verify_aud": bool(settings.clerk_audience),
+        "verify_aud": bool(audience),
         "verify_iss": bool(issuer),
     }
     decode_kwargs: dict[str, Any] = {
         "algorithms": ["RS256"],
         "options": options,
-        "leeway": 30,
+        "leeway": 60,
     }
     if issuer:
         decode_kwargs["issuer"] = issuer
-    if settings.clerk_audience:
-        decode_kwargs["audience"] = settings.clerk_audience
+    if audience:
+        decode_kwargs["audience"] = audience
     return jwt.decode(token, signing_key.key, **decode_kwargs)
 
 

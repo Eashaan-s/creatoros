@@ -21,7 +21,8 @@ function ClerkTokenBridge({ children }: { children: React.ReactNode }) {
     if (!isLoaded || !loaded) return;
     setApiTokenGetter(async () => {
       try {
-        return (await getToken()) ?? null;
+        // Session JWTs are short-lived; skip cache so Railway always gets a fresh token.
+        return (await getToken({ skipCache: true })) ?? null;
       } catch {
         return null;
       }
