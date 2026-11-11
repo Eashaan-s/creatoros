@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     app_name: str = "CreatorOS API"
     environment: Literal["development", "production", "test"] = "development"
     api_prefix: str = "/api/v1"
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     database_url: str = "sqlite+aiosqlite:///./creatoros.db"
 

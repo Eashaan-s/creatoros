@@ -31,7 +31,7 @@ export default function SignUpPage() {
         forceRedirectUrl="/dashboard"
         fallbackRedirectUrl="/dashboard"
         appearance={{
-          variables: { colorPrimary: "#1764e8" },
+          variables: { colorPrimary: "#22d3ee" },
           elements: {
             rootBox: "mx-auto w-full",
             card: "bg-[var(--card)] shadow-none border border-[var(--border)]",

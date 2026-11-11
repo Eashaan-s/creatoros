@@ -269,12 +269,21 @@ export interface AcademicSearchResponse {
   papers: AcademicPaper[];
 }
 
+export type AcademicDetail = "overview" | "thorough" | "exhaustive";
+export type AcademicPages = 1 | 2 | 3 | 4 | 5;
+
 export interface AcademicGenerateRequest {
   topic: string;
   research_question?: string;
   field?: string;
   papers: AcademicPaper[];
   sources?: ResearchSourcePayload[];
+  /** Target paper length in pages (approx). Default 3. */
+  pages?: AcademicPages;
+  /** Section depth. Default thorough. */
+  detail?: AcademicDetail;
+  /** Optional explicit word target; overrides page estimate when set (600–5000). */
+  target_words?: number | null;
   document_id?: string | null;
 }
 
@@ -282,4 +291,27 @@ export interface AcademicImproveRequest {
   content: string;
   instruction?: string;
   document_id?: string | null;
+  pages?: AcademicPages;
+  detail?: AcademicDetail;
+  target_words?: number | null;
 }
+
+export const ACADEMIC_DETAILS: { value: AcademicDetail; label: string; hint: string }[] = [
+  { value: "overview", label: "Overview", hint: "Tight sections, concise Related Work" },
+  { value: "thorough", label: "Thorough", hint: "Balanced IEEE draft depth" },
+  { value: "exhaustive", label: "Exhaustive", hint: "Expanded Methodology & Discussion" },
+];
+
+export const ACADEMIC_PAGE_WORDS: Record<AcademicPages, number> = {
+  1: 700,
+  2: 1100,
+  3: 1600,
+  4: 2200,
+  5: 2800,
+};
+
+/** Max reference PDFs/DOCX/TXT attachments + selected bibliographic papers. */
+export const MAX_ACADEMIC_REFERENCES = 25;
+/** Per-file upload cap (bytes) — aligned with common research PDF limits (~arXiv 50MB). */
+export const MAX_RESEARCH_UPLOAD_BYTES = 50 * 1024 * 1024;
+export const MAX_RESEARCH_UPLOAD_MB = MAX_RESEARCH_UPLOAD_BYTES / (1024 * 1024);

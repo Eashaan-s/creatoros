@@ -16,6 +16,7 @@ function buildMiddleware(): NextMiddleware {
     "/privacy(.*)",
     "/terms(.*)",
     "/help(.*)",
+    "/cookies(.*)",
     "/sign-in(.*)",
     "/sign-up(.*)",
     // Proxied FastAPI — auth is Bearer JWT on the API, not Clerk page session.
@@ -36,7 +37,8 @@ export default function middleware(req: NextRequest, event: NextFetchEvent) {
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    // Skip `/api/v1/*` — proxied FastAPI uses Bearer JWT; Clerk middleware
+    // mis-handles that header and returns HTML 500 on uploads/API calls.
+    "/((?!_next|api/v1|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
 };

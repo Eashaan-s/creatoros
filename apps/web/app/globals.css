@@ -1,52 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #111113;
-  --card-foreground: #fafafa;
-  --muted: #18181b;
-  --muted-foreground: #a1a1aa;
-  --border: #27272a;
-  --input: #27272a;
-  --primary: #e4e4e7;
-  --primary-foreground: #09090b;
-  --secondary: #1c1c1f;
-  --secondary-foreground: #fafafa;
-  --accent: #2b7fff;
-  --accent-foreground: #fafafa;
-  --destructive: #ef4444;
-  --ring: #3f3f46;
-  --sidebar: #0c0c0e;
-  --sidebar-foreground: #f4f4f5;
-  --sidebar-border: #1f1f23;
-  --success: #22c55e;
+  --background: #07090c;
+  --foreground: #f4f7fb;
+  --card: #0e1218;
+  --card-foreground: #f4f7fb;
+  --muted: #151b24;
+  --muted-foreground: #9aa8b8;
+  --border: #243041;
+  --input: #243041;
+  --primary: #e8eef5;
+  --primary-foreground: #07090c;
+  --secondary: #171e28;
+  --secondary-foreground: #f4f7fb;
+  --accent: #22d3ee;
+  --accent-foreground: #041016;
+  --destructive: #f04343;
+  --ring: #22d3ee;
+  --sidebar: #0a0e13;
+  --sidebar-foreground: #e8eef5;
+  --sidebar-border: #1c2533;
+  --success: #34d399;
   --radius: 0.75rem;
-  --glow: rgba(43, 127, 255, 0.2);
+  --glow: rgba(34, 211, 238, 0.18);
 }
 
 .light {
-  --background: #eef4fb;
-  --foreground: #0b1220;
+  --background: #f3f8fb;
+  --foreground: #0b1520;
   --card: #ffffff;
-  --card-foreground: #0b1220;
-  --muted: #dce8f6;
-  --muted-foreground: #3b4f6a;
-  --border: #c5d7ec;
-  --input: #c5d7ec;
-  --primary: #0b1220;
-  --primary-foreground: #f8fbff;
-  --secondary: #d4e4f7;
-  --secondary-foreground: #0b1220;
-  --accent: #1764e8;
+  --card-foreground: #0b1520;
+  --muted: #e2eef5;
+  --muted-foreground: #4a6173;
+  --border: #c5d8e6;
+  --input: #c5d8e6;
+  --primary: #0b1520;
+  --primary-foreground: #f7fcff;
+  --secondary: #d7e8f2;
+  --secondary-foreground: #0b1520;
+  --accent: #0891b2;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
-  --ring: #7db0ff;
-  --sidebar: #e4eef9;
-  --sidebar-foreground: #0b1220;
-  --sidebar-border: #c5d7ec;
-  --success: #15803d;
-  --glow: rgba(23, 100, 232, 0.16);
+  --ring: #22d3ee;
+  --sidebar: #e8f2f8;
+  --sidebar-foreground: #0b1520;
+  --sidebar-border: #c5d8e6;
+  --success: #059669;
+  --glow: rgba(8, 145, 178, 0.14);
 }
 
 @theme inline {
@@ -70,8 +70,8 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-success: var(--success);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
   --radius-lg: var(--radius);
 }
 
@@ -87,7 +87,7 @@ body {
 body {
   background:
     radial-gradient(1200px 600px at 10% -10%, var(--glow), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, color-mix(in oklab, var(--accent) 6%, transparent), transparent 50%),
+    radial-gradient(900px 500px at 100% 0%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 50%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -95,19 +95,26 @@ body {
 }
 
 .academic-jade {
-  /* Keep Signal OS chrome; only a soft green corner tinge */
-  --accent: #3d5c4a;
-  --accent-foreground: #eef5f0;
-  --ring: #3d5c4a;
-  --glow: rgba(61, 92, 74, 0.12);
+  /* Academic mode: soft teal-jade corner (aligned with cyan system) */
+  --accent: #2dd4bf;
+  --accent-foreground: #042f2e;
+  --ring: #2dd4bf;
+  --glow: rgba(45, 212, 191, 0.14);
   position: relative;
   border-radius: 1.25rem;
-  border: 1px solid color-mix(in oklab, #3d5c4a 14%, var(--border));
+  border: 1px solid color-mix(in oklab, #2dd4bf 18%, var(--border));
   background:
-    radial-gradient(520px 280px at 100% 0%, rgba(61, 92, 74, 0.14), transparent 58%),
-    radial-gradient(420px 220px at 0% 100%, rgba(61, 92, 74, 0.05), transparent 55%),
+    radial-gradient(520px 280px at 100% 0%, rgba(45, 212, 191, 0.14), transparent 58%),
+    radial-gradient(420px 220px at 0% 100%, rgba(45, 212, 191, 0.05), transparent 55%),
     transparent;
   padding: 1rem;
+}
+
+.light .academic-jade {
+  --accent: #0f766e;
+  --accent-foreground: #ecfdf8;
+  --ring: #0f766e;
+  --glow: rgba(15, 118, 110, 0.12);
 }
 
 .prose-editor {

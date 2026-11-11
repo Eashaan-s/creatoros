@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-/** Backend origin for same-origin `/api/v1` proxy (phones/LAN can't reach browser `localhost`). */
-const API_ORIGIN = process.env.API_PROXY_ORIGIN ?? "http://127.0.0.1:8000";
-
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   transpilePackages: ["@creatoros/shared"],
@@ -14,14 +11,8 @@ const nextConfig: NextConfig = {
     "127.0.0.1",
     "localhost",
   ],
-  async rewrites() {
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${API_ORIGIN}/api/v1/:path*`,
-      },
-    ];
-  },
+  // Same-origin `/api/v1/*` is handled by `app/api/v1/[...path]/route.ts`
+  // (rewrites break multipart research PDF uploads).
 };
 
 export default nextConfig;

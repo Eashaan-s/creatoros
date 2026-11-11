@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { DocumentDTO } from "@creatoros/shared";
 import {
   ArrowRight,
@@ -69,6 +69,7 @@ const CARDS = [
 export function DashboardHome() {
   const [docs, setDocs] = useState<DocumentDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     let cancelled = false;
@@ -98,9 +99,9 @@ export function DashboardHome() {
       <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--card)]/70 px-6 py-10 text-center md:px-12 md:py-14">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--glow),transparent_55%)]" />
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
+          transition={{ duration: reduceMotion ? 0 : 0.45 }}
           className="relative mx-auto max-w-2xl"
         >
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">

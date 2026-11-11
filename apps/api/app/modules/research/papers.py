@@ -57,7 +57,7 @@ def _year_from_openalex(work: dict[str, Any]) -> int | None:
         return None
 
 
-async def search_openalex(query: str, limit: int = 8) -> list[AcademicPaperOut]:
+async def search_openalex(query: str, limit: int = 20) -> list[AcademicPaperOut]:
     params = {
         "search": query,
         "per_page": limit,
@@ -105,7 +105,7 @@ async def search_openalex(query: str, limit: int = 8) -> list[AcademicPaperOut]:
     return papers
 
 
-async def search_semantic_scholar(query: str, limit: int = 8) -> list[AcademicPaperOut]:
+async def search_semantic_scholar(query: str, limit: int = 20) -> list[AcademicPaperOut]:
     params = {
         "query": query,
         "limit": limit,
@@ -145,7 +145,7 @@ async def search_semantic_scholar(query: str, limit: int = 8) -> list[AcademicPa
     return papers
 
 
-async def search_papers(query: str, limit: int = 8) -> list[AcademicPaperOut]:
+async def search_papers(query: str, limit: int = 20) -> list[AcademicPaperOut]:
     """Prefer OpenAlex; fall back to Semantic Scholar if needed."""
     errors: list[str] = []
     try:

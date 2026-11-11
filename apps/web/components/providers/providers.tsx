@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
-      appearance={{ variables: { colorPrimary: "#1764e8" } }}
+      appearance={{ variables: { colorPrimary: "#22d3ee" } }}
     >
       {inner}
     </ClerkProvider>

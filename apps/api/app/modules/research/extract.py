@@ -15,6 +15,9 @@ from pypdf import PdfReader
 ResearchSourceKind = Literal["pdf", "docx", "txt", "url", "youtube", "paste"]
 
 MAX_CHARS = 80_000
+# Academic uploads: enough signal without parsing entire 50MB manuscripts.
+MAX_PDF_PAGES = 30
+PDFMINER_MAX_PAGES = 12
 
 BROWSER_HEADERS = {
     "User-Agent": (
@@ -45,15 +48,58 @@ def extract_txt(data: bytes) -> str:
 
 
 def extract_pdf(data: bytes) -> str:
-    reader = PdfReader(io.BytesIO(data))
+    """Extract text from a PDF. Prefer fast pypdf; limited pdfminer only if parse fails."""
     parts: list[str] = []
-    for page in reader.pages:
-        text = page.extract_text() or ""
-        if text.strip():
-            parts.append(text)
-    if not parts:
-        raise ValueError("No extractable text found in PDF (it may be image-only).")
-    return truncate("\n\n".join(parts))
+    pypdf_parsed = False
+
+    try:
+        reader = PdfReader(io.BytesIO(data), strict=False)
+        if getattr(reader, "is_encrypted", False):
+            try:
+                reader.decrypt("")
+            except Exception as exc:  # noqa: BLE001
+                raise ValueError(
+                    "This PDF is password-protected. Unlock it, then upload again."
+                ) from exc
+
+        pypdf_parsed = True
+        total = 0
+        for index, page in enumerate(reader.pages):
+            if index >= MAX_PDF_PAGES or total >= MAX_CHARS:
+                break
+            try:
+                text = page.extract_text() or ""
+            except Exception:  # noqa: BLE001
+                text = ""
+            if text.strip():
+                parts.append(text)
+                total += len(text)
+        if parts:
+            return truncate("\n\n".join(parts))
+    except ValueError:
+        raise
+    except Exception:
+        pypdf_parsed = False
+
+    # pypdf opened the file but found no text → almost always image-only; skip slow pdfminer.
+    if not pypdf_parsed:
+        try:
+            from pdfminer.high_level import extract_text as pdfminer_extract_text
+
+            mined = (
+                pdfminer_extract_text(io.BytesIO(data), maxpages=PDFMINER_MAX_PAGES) or ""
+            ).strip()
+            if mined:
+                return truncate(mined)
+        except ImportError:
+            pass
+        except Exception:  # noqa: BLE001
+            pass
+
+    raise ValueError(
+        "No extractable text found in PDF (it may be a scan/image-only). "
+        "Use a text PDF, run OCR, or paste the paper text instead."
+    )
 
 
 def extract_docx(data: bytes) -> str:

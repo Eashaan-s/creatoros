@@ -92,11 +92,11 @@ export function LandingPage() {
 
   return (
     <div className="relative overflow-x-hidden">
-      <CursorGlow color="43, 127, 255" size={34} intensity={0.3} />
+      <CursorGlow color="34, 211, 238" size={34} intensity={0.28} />
 
       <section className="relative min-h-[100svh] overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_18%,rgba(31,111,235,0.2),transparent_58%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_18%,rgba(34,211,238,0.18),transparent_58%)]" />
           <div
             className="absolute inset-0 opacity-[0.28]"
             style={{
@@ -297,7 +297,7 @@ export function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden border-t border-[var(--border)]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(31,111,235,0.14),transparent_55%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(34,211,238,0.12),transparent_55%)]" />
         <div className="relative mx-auto max-w-5xl px-5 py-20 text-center md:px-8 md:py-28">
           <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">Open the studio.</h2>
           <p className="mx-auto mt-4 max-w-md text-sm text-[var(--muted-foreground)] md:text-base">
@@ -315,6 +315,9 @@ export function LandingPage() {
           <div className="flex flex-wrap gap-4 text-sm text-[var(--muted-foreground)]">
             <Link href="/privacy" className="hover:text-[var(--foreground)]">
               Privacy
+            </Link>
+            <Link href="/cookies" className="hover:text-[var(--foreground)]">
+              Cookies
             </Link>
             <Link href="/terms" className="hover:text-[var(--foreground)]">
               Terms

@@ -58,7 +58,8 @@ def _get_jwks_client(settings: Settings) -> PyJWKClient:
             detail="CLERK_JWKS_URL is not configured",
         )
     if _jwks_client is None or _jwks_client_url != jwks_url:
-        _jwks_client = PyJWKClient(jwks_url, cache_keys=True)
+        # Long lifespan avoids re-fetching Clerk JWKS on every local request burst.
+        _jwks_client = PyJWKClient(jwks_url, cache_keys=True, lifespan=3600)
         _jwks_client_url = jwks_url
     return _jwks_client
 

@@ -1,5 +1,6 @@
 import json
 from collections.abc import AsyncIterator
+import asyncio
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
@@ -30,7 +31,10 @@ from app.services.ai.service import AIService
 
 router = APIRouter(prefix="/research", tags=["research"])
 
-MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+# Align with common research PDF limits (e.g. arXiv ~50MB manuscripts).
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+MAX_UPLOAD_MB = MAX_UPLOAD_BYTES // (1024 * 1024)
+MAX_REFERENCE_FILES = 25
 
 
 def _research_service(ai: AIService = Depends(get_ai)) -> ResearchService:
@@ -51,14 +55,27 @@ async def extract_file(
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file")
     if len(raw) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail="File too large (max 12MB)")
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large (max {MAX_UPLOAD_MB}MB per file)",
+        )
     filename = file.filename or "upload.txt"
     try:
-        kind, content = extract_mod.extract_file(filename, raw)
+        # CPU-bound parse off the event loop so parallel uploads don't stall.
+        kind, content = await asyncio.to_thread(extract_mod.extract_file, filename, raw)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=400, detail=f"Failed to parse file: {exc}") from exc
+        # Never leak a bare 500 to the studio for bad/scanned PDFs.
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not read this file. Try another PDF/DOCX/TXT, or paste the text. ({exc})",
+        ) from exc
+    if not content.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="File contained no usable text. Use a text PDF or paste the content.",
+        )
     return ResearchExtractResponse(
         kind=kind,
         title=filename,

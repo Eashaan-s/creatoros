@@ -17,20 +17,28 @@ import type {
   WriterImproveRequest,
 } from "@creatoros/shared";
 
-/** Prefer same-origin `/api/v1` (Next rewrite → FastAPI) so phones/LAN work. */
+/** Prefer same-origin `/api/v1` on phone/LAN; hit FastAPI directly on desktop localhost. */
 function resolveApiBase(): string {
   const configured = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
   if (typeof window === "undefined") return configured;
 
-  // Relative paths stay same-origin (works on phone via LAN IP).
+  const pageHost = window.location.hostname;
+  const isLocalPage = pageHost === "localhost" || pageHost === "127.0.0.1";
+  const directLocal =
+    process.env.NEXT_PUBLIC_API_DIRECT_URL?.trim() || "http://127.0.0.1:8000/api/v1";
+
+  // Desktop localhost: skip the Next.js API route (adds ~1s+ per call in dev).
+  if (isLocalPage && (configured.startsWith("/") || isLocalApiUrl(configured))) {
+    return directLocal;
+  }
+
   if (configured.startsWith("/")) return configured;
 
   try {
     const url = new URL(configured);
-    const pageHost = window.location.hostname;
     const isLocalApi = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-    const isLanPage = pageHost !== "localhost" && pageHost !== "127.0.0.1";
-    // Never call PC "localhost" from a phone — use same-origin proxy instead.
+    const isLanPage = !isLocalPage;
+    // Phone/LAN can't reach the PC's localhost — use same-origin proxy.
     if (isLocalApi && isLanPage) return "/api/v1";
   } catch {
     // ignore
@@ -38,7 +46,16 @@ function resolveApiBase(): string {
   return configured;
 }
 
-export type TokenGetter = () => Promise<string | null>;
+function isLocalApiUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+export type TokenGetter = (options?: { skipCache?: boolean }) => Promise<string | null>;
 
 let tokenGetter: TokenGetter | null = null;
 
@@ -46,20 +63,20 @@ export function setApiTokenGetter(getter: TokenGetter) {
   tokenGetter = getter;
 }
 
-async function resolveAuthToken(): Promise<string | null> {
+async function resolveAuthToken(skipCache = false): Promise<string | null> {
   if (!tokenGetter) return null;
-  let token = await tokenGetter();
+  let token = await tokenGetter({ skipCache });
   if (token) return token;
   // Clerk on mobile/LAN can hydrate a beat late after navigation.
   await new Promise((r) => setTimeout(r, 400));
-  token = await tokenGetter();
+  token = await tokenGetter({ skipCache: true });
   return token;
 }
 
-async function authHeaders(json = true): Promise<HeadersInit> {
+async function authHeaders(json = true, skipCache = false): Promise<HeadersInit> {
   const headers: Record<string, string> = {};
   if (json) headers["Content-Type"] = "application/json";
-  const token = await resolveAuthToken();
+  const token = await resolveAuthToken(skipCache);
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
   if (token) {
@@ -79,15 +96,26 @@ async function authHeaders(json = true): Promise<HeadersInit> {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const apiBase = resolveApiBase();
-  let res: Response;
-  try {
-    res = await fetch(`${apiBase}${path}`, {
+  const isForm = init?.body instanceof FormData;
+
+  const doFetch = async (skipCache: boolean) => {
+    const res = await fetch(`${apiBase}${path}`, {
       ...init,
       headers: {
-        ...(await authHeaders(!(init?.body instanceof FormData))),
+        ...(await authHeaders(!isForm, skipCache)),
         ...(init?.headers ?? {}),
       },
     });
+    return res;
+  };
+
+  let res: Response;
+  try {
+    res = await doFetch(false);
+    // One refresh if the cached Clerk JWT was stale.
+    if (res.status === 401) {
+      res = await doFetch(true);
+    }
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("Not signed in")) throw err;
     throw new Error(
@@ -122,9 +150,15 @@ function formatApiError(raw: string, status: number): string {
         .join("; ");
     }
   } catch {
-    // not JSON
+    // not JSON — proxy/HTML bodies often say only "Internal Server Error"
   }
-  return trimmed.length > 280 ? `${trimmed.slice(0, 280)}…` : trimmed;
+  const plain = trimmed.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (/^internal server error$/i.test(plain) || status >= 500) {
+    return status >= 500
+      ? "Server error while reading this file. Confirm the API is running, then try a text PDF or paste the content."
+      : plain;
+  }
+  return plain.length > 280 ? `${plain.slice(0, 280)}…` : plain;
 }
 
 export const api = {
@@ -157,7 +191,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  searchAcademicPapers: (query: string, limit = 8) =>
+  searchAcademicPapers: (query: string, limit = 20) =>
     request<AcademicSearchResponse>("/research/papers/search", {
       method: "POST",
       body: JSON.stringify({ query, limit }),
@@ -208,14 +242,21 @@ async function streamSSE(
   signal?: AbortSignal,
 ) {
   const apiBase = resolveApiBase();
-  let res: Response;
-  try {
-    res = await fetch(`${apiBase}${path}`, {
+
+  const doFetch = async (skipCache: boolean) =>
+    fetch(`${apiBase}${path}`, {
       method: "POST",
-      headers: await authHeaders(true),
+      headers: await authHeaders(true, skipCache),
       body: JSON.stringify(body),
       signal,
     });
+
+  let res: Response;
+  try {
+    res = await doFetch(false);
+    if (res.status === 401) {
+      res = await doFetch(true);
+    }
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("Not signed in")) throw err;
     throw new Error(

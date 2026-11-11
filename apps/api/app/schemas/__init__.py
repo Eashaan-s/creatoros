@@ -157,7 +157,7 @@ class ResearchSourcePayload(BaseModel):
 
 
 class ResearchGenerateRequest(BaseModel):
-    sources: list[ResearchSourcePayload] = Field(min_length=1)
+    sources: list[ResearchSourcePayload] = Field(min_length=1, max_length=25)
     outputs: list[ResearchOutputType] = Field(min_length=1)
     focus: str = Field(default="", max_length=1000)
     document_id: str | None = None
@@ -214,7 +214,7 @@ class AcademicPaperOut(BaseModel):
 
 class AcademicSearchRequest(BaseModel):
     query: str = Field(min_length=2, max_length=500)
-    limit: int = Field(default=8, ge=1, le=20)
+    limit: int = Field(default=20, ge=1, le=40)
 
 
 class AcademicSearchResponse(BaseModel):
@@ -226,8 +226,11 @@ class AcademicGenerateRequest(BaseModel):
     topic: str = Field(min_length=1, max_length=500)
     research_question: str = Field(default="", max_length=1000)
     field: str = Field(default="", max_length=200)
-    papers: list[AcademicPaperOut] = Field(default_factory=list)
-    sources: list[ResearchSourcePayload] = Field(default_factory=list)
+    papers: list[AcademicPaperOut] = Field(default_factory=list, max_length=25)
+    sources: list[ResearchSourcePayload] = Field(default_factory=list, max_length=25)
+    pages: Literal[1, 2, 3, 4, 5] = 3
+    detail: Literal["overview", "thorough", "exhaustive"] = "thorough"
+    target_words: int | None = Field(default=None, ge=600, le=5000)
     document_id: str | None = None
 
 
@@ -237,6 +240,9 @@ class AcademicImproveRequest(BaseModel):
         "Improve academic clarity and IEEE-style structure while preserving citations and meaning."
     )
     document_id: str | None = None
+    pages: Literal[1, 2, 3, 4, 5] | None = None
+    detail: Literal["overview", "thorough", "exhaustive"] | None = None
+    target_words: int | None = Field(default=None, ge=600, le=5000)
 
 
 class DocumentCreate(BaseModel):

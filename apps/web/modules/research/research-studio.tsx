@@ -3,13 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  ACADEMIC_DETAILS,
+  ACADEMIC_PAGE_WORDS,
+  MAX_ACADEMIC_REFERENCES,
+  MAX_RESEARCH_UPLOAD_BYTES,
+  MAX_RESEARCH_UPLOAD_MB,
   RESEARCH_OUTPUTS,
+  type AcademicDetail,
+  type AcademicPages,
   type AcademicPaper,
   type ResearchGenerateRequest,
   type ResearchOutputType,
   type ResearchSourcePayload,
 } from "@creatoros/shared";
 import { toast } from "sonner";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Copy,
   Download,
@@ -67,6 +75,10 @@ export function ResearchStudio() {
   const [searching, setSearching] = useState(false);
   const [paperHits, setPaperHits] = useState<AcademicPaper[]>([]);
   const [selectedPapers, setSelectedPapers] = useState<AcademicPaper[]>([]);
+  const [academicPages, setAcademicPages] = useState<AcademicPages>(3);
+  const [academicDetail, setAcademicDetail] = useState<AcademicDetail>("thorough");
+  const [customWords, setCustomWords] = useState("");
+  const reduceMotion = useReducedMotion();
 
   const [html, setHtml] = useState("");
   const [markdown, setMarkdown] = useState("");
@@ -76,6 +88,17 @@ export function ResearchStudio() {
   const abortRef = useRef<AbortController | null>(null);
   const bootstrapped = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const parsedCustomWords = useMemo(() => {
+    const n = Number.parseInt(customWords.trim(), 10);
+    if (!Number.isFinite(n)) return null;
+    return Math.min(5000, Math.max(600, n));
+  }, [customWords]);
+
+  const estimatedWords = parsedCustomWords ?? ACADEMIC_PAGE_WORDS[academicPages];
+  const lengthHint = parsedCustomWords
+    ? `~${estimatedWords} words (custom)`
+    : `~${estimatedWords} words · ~${academicPages} page${academicPages === 1 ? "" : "s"}`;
 
   function resetStudioWorkspace() {
     abortRef.current?.abort();
@@ -96,6 +119,9 @@ export function ResearchStudio() {
     setPaperQuery("");
     setPaperHits([]);
     setSelectedPapers([]);
+    setAcademicPages(3);
+    setAcademicDetail("thorough");
+    setCustomWords("");
     setHtml("");
     setMarkdown("");
     setDocumentId(null);
@@ -129,6 +155,19 @@ export function ResearchStudio() {
             if (typeof meta.research_question === "string") setResearchQuestion(meta.research_question);
             if (typeof meta.field === "string") setField(meta.field);
             if (Array.isArray(meta.papers)) setSelectedPapers(meta.papers as AcademicPaper[]);
+            if (typeof meta.pages === "number" && meta.pages >= 1 && meta.pages <= 5) {
+              setAcademicPages(meta.pages as AcademicPages);
+            }
+            if (
+              meta.detail === "overview" ||
+              meta.detail === "thorough" ||
+              meta.detail === "exhaustive"
+            ) {
+              setAcademicDetail(meta.detail);
+            }
+            if (typeof meta.target_words === "number") {
+              setCustomWords(String(meta.target_words));
+            }
           }
           if (typeof meta.focus === "string") setFocus(meta.focus);
           if (Array.isArray(meta.outputs)) setOutputs(meta.outputs as ResearchOutputType[]);
@@ -182,10 +221,16 @@ export function ResearchStudio() {
   }
 
   function addSource(source: ResearchSourcePayload) {
-    setSources((prev) => [
-      ...prev,
-      { ...source, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
-    ]);
+    setSources((prev) => {
+      if (prev.length >= MAX_ACADEMIC_REFERENCES) {
+        toast.error(`You can attach up to ${MAX_ACADEMIC_REFERENCES} reference files`);
+        return prev;
+      }
+      return [
+        ...prev,
+        { ...source, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+      ];
+    });
   }
 
   function togglePaper(paper: AcademicPaper) {
@@ -193,11 +238,23 @@ export function ResearchStudio() {
       if (prev.some((p) => p.id === paper.id)) {
         return prev.filter((p) => p.id !== paper.id);
       }
+      if (prev.length >= MAX_ACADEMIC_REFERENCES) {
+        toast.error(`You can select up to ${MAX_ACADEMIC_REFERENCES} reference papers`);
+        return prev;
+      }
       return [...prev, paper];
     });
   }
 
   async function onUpload(file: File) {
+    if (file.size > MAX_RESEARCH_UPLOAD_BYTES) {
+      toast.error(`“${file.name}” is too large (max ${MAX_RESEARCH_UPLOAD_MB}MB)`);
+      return;
+    }
+    if (sources.length >= MAX_ACADEMIC_REFERENCES) {
+      toast.error(`You can attach up to ${MAX_ACADEMIC_REFERENCES} reference files`);
+      return;
+    }
     setExtracting(true);
     try {
       const extracted = await api.extractResearchFile(file);
@@ -210,6 +267,69 @@ export function ResearchStudio() {
       toast.success(`Added ${extracted.title}`);
     } catch (err) {
       toast.error((err as Error).message || "Upload failed");
+    } finally {
+      setExtracting(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function onUploadMany(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+    const room = MAX_ACADEMIC_REFERENCES - sources.length;
+    if (room <= 0) {
+      toast.error(`You can attach up to ${MAX_ACADEMIC_REFERENCES} reference files`);
+      return;
+    }
+    const batch = files.slice(0, room);
+    if (files.length > room) {
+      toast.message(`Only ${room} more file${room === 1 ? "" : "s"} can be added (max ${MAX_ACADEMIC_REFERENCES})`);
+    }
+
+    const oversized = batch.filter((f) => f.size > MAX_RESEARCH_UPLOAD_BYTES);
+    for (const file of oversized) {
+      toast.error(`“${file.name}” is too large (max ${MAX_RESEARCH_UPLOAD_MB}MB)`);
+    }
+    const eligible = batch.filter((f) => f.size <= MAX_RESEARCH_UPLOAD_BYTES);
+    if (eligible.length === 0) return;
+
+    setExtracting(true);
+    const concurrency = 4;
+    let ok = 0;
+    let failed = 0;
+    let cursor = 0;
+
+    async function worker() {
+      while (cursor < eligible.length) {
+        const index = cursor;
+        cursor += 1;
+        const file = eligible[index];
+        try {
+          const extracted = await api.extractResearchFile(file);
+          addSource({
+            kind: extracted.kind,
+            title: extracted.title,
+            content: extracted.content,
+            origin: extracted.origin,
+          });
+          ok += 1;
+        } catch (err) {
+          failed += 1;
+          toast.error(`“${file.name}”: ${(err as Error).message || "Upload failed"}`);
+        }
+      }
+    }
+
+    try {
+      await Promise.all(
+        Array.from({ length: Math.min(concurrency, eligible.length) }, () => worker()),
+      );
+      if (ok > 0) {
+        toast.success(ok === 1 ? "Added 1 file" : `Added ${ok} files`);
+      }
+      if (failed > 0 && ok === 0) {
+        toast.error("No files could be attached");
+      }
     } finally {
       setExtracting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -286,7 +406,7 @@ export function ResearchStudio() {
     }
     setSearching(true);
     try {
-      const result = await api.searchAcademicPapers(paperQuery.trim(), 8);
+      const result = await api.searchAcademicPapers(paperQuery.trim(), 20);
       setPaperHits(result.papers);
       if (result.papers.length === 0) toast.message("No papers found — try another query");
       else toast.success(`Found ${result.papers.length} papers`);
@@ -330,6 +450,9 @@ export function ResearchStudio() {
               content,
               origin,
             })),
+            pages: academicPages,
+            detail: academicDetail,
+            target_words: parsedCustomWords,
             document_id: documentId,
           },
           {
@@ -376,7 +499,13 @@ export function ResearchStudio() {
     try {
       const result =
         mode === "academic"
-          ? await api.improveAcademic({ content: markdown, document_id: documentId })
+          ? await api.improveAcademic({
+              content: markdown,
+              document_id: documentId,
+              pages: academicPages,
+              detail: academicDetail,
+              target_words: parsedCustomWords,
+            })
           : await api.improveResearch({ content: markdown, document_id: documentId });
       setMarkdown(result.text);
       setHtml(markdownToHtml(result.text));
@@ -412,6 +541,9 @@ export function ResearchStudio() {
                 topic,
                 research_question: researchQuestion,
                 field,
+                pages: academicPages,
+                detail: academicDetail,
+                target_words: parsedCustomWords ?? estimatedWords,
                 papers: selectedPapers,
                 sources: sources.map((s) => ({
                   kind: s.kind,
@@ -500,7 +632,7 @@ export function ResearchStudio() {
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold tracking-tight transition",
                 mode === "academic"
-                  ? "bg-[color-mix(in_oklab,#3d5c4a_88%,black)] text-[#eef5f0] shadow-sm ring-1 ring-[color-mix(in_oklab,#3d5c4a_50%,transparent)]"
+                  ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm ring-1 ring-[color-mix(in_oklab,var(--accent)_40%,transparent)]"
                   : "text-[var(--muted-foreground)] hover:bg-[var(--card)] hover:text-[var(--foreground)]",
               )}
             >
@@ -546,6 +678,74 @@ export function ResearchStudio() {
                 />
               </div>
 
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key="academic-length"
+                  initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.25 }}
+                  className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--muted)]/35 p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="mb-0">Paper length</Label>
+                    <span className="font-mono text-[11px] text-[var(--muted-foreground)]">{lengthHint}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([1, 2, 3, 4, 5] as AcademicPages[]).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setAcademicPages(p);
+                          setCustomWords("");
+                        }}
+                        className={cn(
+                          "min-w-9 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition",
+                          academicPages === p && !parsedCustomWords
+                            ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+                            : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]/50 hover:text-[var(--foreground)]",
+                        )}
+                      >
+                        {p}p
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Detail</Label>
+                    <div className="grid gap-1.5">
+                      {ACADEMIC_DETAILS.map((d) => (
+                        <button
+                          key={d.value}
+                          type="button"
+                          onClick={() => setAcademicDetail(d.value)}
+                          className={cn(
+                            "rounded-lg border px-2.5 py-2 text-left transition",
+                            academicDetail === d.value
+                              ? "border-[var(--accent)] bg-[var(--accent)]/10"
+                              : "border-[var(--border)] hover:bg-[var(--card)]",
+                          )}
+                        >
+                          <p className="text-xs font-semibold tracking-tight">{d.label}</p>
+                          <p className="mt-0.5 text-[11px] text-[var(--muted-foreground)]">{d.hint}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Custom words (optional)</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={customWords}
+                      onChange={(e) => setCustomWords(e.target.value.replace(/[^\d]/g, ""))}
+                      placeholder="e.g. 2500 (overrides pages)"
+                    />
+                    <p className="text-[11px] text-[var(--muted-foreground)]">
+                      Leave blank to use page presets. Range 600–5000.
+                    </p>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
               <div className="space-y-2">
                 <Label>Find papers (OpenAlex / Semantic Scholar)</Label>
                 <div className="flex gap-2">
@@ -567,7 +767,7 @@ export function ResearchStudio() {
               </div>
 
               {paperHits.length > 0 ? (
-                <div className="max-h-56 space-y-2 overflow-y-auto">
+                <div className="max-h-72 space-y-2 overflow-y-auto">
                   {paperHits.map((paper) => {
                     const selected = selectedPapers.some((p) => p.id === paper.id);
                     return (
@@ -596,7 +796,9 @@ export function ResearchStudio() {
 
               {selectedPapers.length > 0 ? (
                 <div className="space-y-2">
-                  <Label>Selected papers ({selectedPapers.length})</Label>
+                  <Label>
+                    Selected papers ({selectedPapers.length}/{MAX_ACADEMIC_REFERENCES})
+                  </Label>
                   <ul className="space-y-1.5">
                     {selectedPapers.map((p, idx) => (
                       <li
@@ -618,26 +820,35 @@ export function ResearchStudio() {
           ) : null}
 
           <div className="space-y-2">
-            <Label>{mode === "academic" ? "Extra sources (optional)" : "Upload PDF / DOCX / TXT"}</Label>
+            <Label>
+              {mode === "academic" ? "Reference files (PDF / DOCX / TXT)" : "Upload PDF / DOCX / TXT"}
+            </Label>
+            <p className="text-[11px] text-[var(--muted-foreground)]">
+              Up to {MAX_ACADEMIC_REFERENCES} files · {MAX_RESEARCH_UPLOAD_MB}MB each
+              {mode === "academic" ? " · combine with selected papers" : ""}
+            </p>
             <input
               ref={fileRef}
               type="file"
+              multiple
               accept=".pdf,.docx,.txt,.md,application/pdf"
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void onUpload(file);
+                const list = e.target.files;
+                if (list?.length) void onUploadMany(list);
               }}
             />
             <Button
               type="button"
               variant="outline"
               className="w-full"
-              disabled={extracting}
+              disabled={extracting || sources.length >= MAX_ACADEMIC_REFERENCES}
               onClick={() => fileRef.current?.click()}
             >
               {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-              Choose file
+              {sources.length >= MAX_ACADEMIC_REFERENCES
+                ? `Limit reached (${MAX_ACADEMIC_REFERENCES})`
+                : "Choose files"}
             </Button>
           </div>
 
@@ -686,7 +897,9 @@ export function ResearchStudio() {
 
           {sources.length > 0 ? (
             <div className="space-y-2">
-              <Label>Sources ({sources.length})</Label>
+              <Label>
+                Sources ({sources.length}/{MAX_ACADEMIC_REFERENCES})
+              </Label>
               <ul className="space-y-2">
                 {sources.map((s) => (
                   <li
